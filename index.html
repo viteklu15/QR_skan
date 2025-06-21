@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>Сканер QR-кодов</title>
+  <meta charset="UTF-8">
+  <title>QR Сканер</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     body { font-family: sans-serif; text-align: center; padding: 20px; }
@@ -18,61 +17,48 @@
       border: none;
       border-radius: 5px;
     }
-    #log {
-      margin-top: 20px;
-      font-size: 0.9em;
-      color: gray;
-      white-space: pre-line;
-    }
   </style>
 </head>
 <body>
-  <h2>Сканер QR-кода</h2>
-  <button id="start-button">▶️ Включить сканер</button>
+  <h2>QR Сканер</h2>
+  <button id="start-button">▶️ Включить</button>
   <div id="qr-reader"></div>
   <div id="result">Ожидание сканирования...</div>
-  <div id="log"></div>
 
   <script>
     const button = document.getElementById('start-button');
     const reader = document.getElementById('qr-reader');
-    const log = document.getElementById('log');
+    const result = document.getElementById('result');
 
-    function appendLog(text) {
-      log.innerText += text + "\n";
+    // Звук — короткий писк
+    function beep() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.value = 1000;
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start();
+      gain.gain.setValueAtTime(1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.2);
+      oscillator.stop(ctx.currentTime + 0.2);
     }
 
-    function onScanSuccess(decodedText, decodedResult) {
-      document.getElementById('result').innerText = "✅ Сканировано: " + decodedText;
-      appendLog("📦 Данные: " + decodedText);
-      html5QrcodeScanner.clear();
+    function onScanSuccess(decodedText) {
+      result.innerText = "✅ Сканировано: " + decodedText;
+      beep();
+      scanner.clear();
     }
+
+    let scanner;
 
     button.addEventListener('click', () => {
-      appendLog("🔄 Нажата кнопка запуска сканера");
       button.style.display = 'none';
       reader.style.display = 'block';
-
-      if (!window.Html5QrcodeScanner) {
-        appendLog("❌ Html5QrcodeScanner не найден");
-        return;
-      }
-
-      appendLog("📦 Html5QrcodeScanner инициализируется...");
-
-      try {
-        const html5QrcodeScanner = new Html5QrcodeScanner(
-          "qr-reader", { fps: 10, qrbox: 250 });
-        html5QrcodeScanner.render(onScanSuccess);
-      } catch (e) {
-        appendLog("❌ Ошибка запуска сканера: " + e);
-      }
+      scanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 });
+      scanner.render(onScanSuccess);
     });
-
-    // Проверим доступ к камере
-    navigator.mediaDevices?.getUserMedia({ video: true })
-      .then(() => appendLog("✅ Камера доступна"))
-      .catch(err => appendLog("⛔ Камера недоступна: " + err));
   </script>
 </body>
 </html>
