@@ -6,21 +6,9 @@
   <title>Сканер QR-кодов</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
   <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 20px;
-    }
-    #qr-reader {
-      width: 300px;
-      margin: auto;
-      display: none;
-    }
-    #result {
-      margin-top: 20px;
-      font-size: 1.2em;
-      color: green;
-    }
+    body { font-family: sans-serif; text-align: center; padding: 20px; }
+    #qr-reader { width: 300px; margin: auto; display: none; }
+    #result { margin-top: 20px; font-size: 1.2em; color: green; }
     #start-button {
       padding: 10px 20px;
       font-size: 1em;
@@ -30,6 +18,12 @@
       border: none;
       border-radius: 5px;
     }
+    #log {
+      margin-top: 20px;
+      font-size: 0.9em;
+      color: gray;
+      white-space: pre-line;
+    }
   </style>
 </head>
 <body>
@@ -37,23 +31,48 @@
   <button id="start-button">▶️ Включить сканер</button>
   <div id="qr-reader"></div>
   <div id="result">Ожидание сканирования...</div>
+  <div id="log"></div>
 
   <script>
     const button = document.getElementById('start-button');
     const reader = document.getElementById('qr-reader');
+    const log = document.getElementById('log');
+
+    function appendLog(text) {
+      log.innerText += text + "\n";
+    }
 
     function onScanSuccess(decodedText, decodedResult) {
       document.getElementById('result').innerText = "✅ Сканировано: " + decodedText;
+      appendLog("📦 Данные: " + decodedText);
       html5QrcodeScanner.clear();
     }
 
     button.addEventListener('click', () => {
+      appendLog("🔄 Нажата кнопка запуска сканера");
       button.style.display = 'none';
       reader.style.display = 'block';
-      const html5QrcodeScanner = new Html5QrcodeScanner(
-        "qr-reader", { fps: 10, qrbox: 250 });
-      html5QrcodeScanner.render(onScanSuccess);
+
+      if (!window.Html5QrcodeScanner) {
+        appendLog("❌ Html5QrcodeScanner не найден");
+        return;
+      }
+
+      appendLog("📦 Html5QrcodeScanner инициализируется...");
+
+      try {
+        const html5QrcodeScanner = new Html5QrcodeScanner(
+          "qr-reader", { fps: 10, qrbox: 250 });
+        html5QrcodeScanner.render(onScanSuccess);
+      } catch (e) {
+        appendLog("❌ Ошибка запуска сканера: " + e);
+      }
     });
+
+    // Проверим доступ к камере
+    navigator.mediaDevices?.getUserMedia({ video: true })
+      .then(() => appendLog("✅ Камера доступна"))
+      .catch(err => appendLog("⛔ Камера недоступна: " + err));
   </script>
 </body>
 </html>
